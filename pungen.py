@@ -36,13 +36,13 @@ class Pungen:
         self.model = word_predict.model
         self.model_params = model_params
         if model_params['optimizer'] == 'adam':
-            optimizer = Adam(learning_rate= model_params['lr'])
+            optimizer = Adam(learning_rate=model_params['lr'])
         elif model_params['optimizer'] == 'adagrad':
-            optimizer = Adagrad(learning_rate= model_params['lr'])
+            optimizer = Adagrad(learning_rate=model_params['lr'])
         elif model_params['optimizer'] == 'rmsprop':
-            optimizer = RMSprop(learning_rate= model_params['lr'])
+            optimizer = RMSprop(learning_rate=model_params['lr'])
         elif model_params['optimizer'] == 'sgd':
-            optimizer = SGD(learning_rate= model_params['lr'])
+            optimizer = SGD(learning_rate=model_params['lr'])
         self.model.compile(optimizer=optimizer,
                            loss='categorical_crossentropy',
                            metrics=['categorical_accuracy'])

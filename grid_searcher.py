@@ -15,6 +15,10 @@ class GridSearcher:
         optimizer = random.choice(self.grid_params['optimizer'])
         learning_rate = random.choice(self.grid_params['lr'])
 
+        while max(lstm) >=128 and max(dense_size) >= 32:
+            lstm = random.choice(self.grid_params['lstm'])
+            dense_size = random.choice(self.grid_params['dense']['size'])
+
         grid_dict = {
             'lstm':lstm,
             'dense': {
