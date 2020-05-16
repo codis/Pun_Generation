@@ -6,15 +6,16 @@ import numpy as np
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.utils import to_categorical
-from tensorflow.keras.layers import Dense, Input, GlobalMaxPooling1D, Concatenate, Add
-from tensorflow.keras.layers import Conv1D, MaxPooling1D, Embedding, LSTM
+from tensorflow.keras.layers import Dense, Input, Concatenate, Add
+from tensorflow.keras.layers import Embedding, LSTM
 from tensorflow.keras.models import Model
 from tensorflow.keras.initializers import Constant
+from generator import Generator
 
 
 BASE_DIR = ''
 GLOVE_DIR = os.path.join(BASE_DIR, 'embs/glove.6B')
-TEXT_DATA_DIR = os.path.join(BASE_DIR, 'data/20_newsgroup')
+TEXT_DATA_DIR = os.path.join(BASE_DIR, 'data/bookcorpus')
 MAX_SEQUENCE_LENGTH = 1000
 MAX_NUM_WORDS = 20000
 EMBEDDING_DIM = 300
@@ -50,16 +51,15 @@ class WordPredict:
                 self.label_id = len(self.labels_index)
                 self.labels_index[name] = self.label_id
                 for fname in sorted(os.listdir(path)):
-                    if fname.isdigit():
-                        fpath = os.path.join(path, fname)
-                        args = {} if sys.version_info < (3,) else {'encoding': 'latin-1'}
-                        with open(fpath, **args) as f:
-                            t = f.read()
-                            i = t.find('\n\n')  # skip header
-                            if 0 < i:
-                                t = t[i:]
-                            self.texts.append(t)
-                        self.labels.append(self.label_id)
+                    fpath = os.path.join(path, fname)
+                    args = {} if sys.version_info < (3,) else {'encoding': 'latin-1'}
+                    with open(fpath, **args) as f:
+                        t = f.read()
+                        i = t.find('\n\n')  # skip header
+                        if 0 < i:
+                            t = t[i:]
+                        self.texts.append(t)
+                    self.labels.append(self.label_id)
 
         print('Found %s texts.' % len(self.texts))
 
@@ -91,10 +91,20 @@ class WordPredict:
 
         print('Preparing embedding matrix.')
 
+
     def prepare_emb(self):
-        self.test_dataset()
+        print('Indexing word vectors.')
+
+        self.embeddings_index = {}
+        with open(os.path.join(GLOVE_DIR, 'glove.6B.300d.txt'), encoding='utf-8') as f:
+            for line in f:
+                word, coefs = line.split(maxsplit=1)
+                coefs = np.fromstring(coefs, 'f', sep=' ')
+                self.embeddings_index[word] = coefs
+
+        print('Found %s word vectors.' % len(self.embeddings_index))
         # prepare embedding matrix
-        self.num_words = min(self.MAX_NUM_WORDS, len(self.word_index) + 1)
+        self.num_words = self.MAX_NUM_WORDS
         self.embedding_matrix = np.zeros((self.num_words, self.EMBEDDING_DIM))
         for word, i in self.word_index.items():
             if i >= self.MAX_NUM_WORDS:
@@ -111,6 +121,7 @@ class WordPredict:
                                          embeddings_initializer=Constant(self.embedding_matrix),
                                          input_length=self.MAX_SEQUENCE_LENGTH,
                                          trainable=False)
+
     def build_model(self, **kwargs):
         lstm = kwargs.get('lstm_array', None)
         cnn = kwargs.get('cnn_array', None)
@@ -144,6 +155,15 @@ class WordPredict:
 
         self.model = Model(inputs=[inp_pre, inp_post], outputs=out)
 
+    def train(self):
+        gen = Generator(filepath='all.txt', batch_size=32)
+        train_gen = gen.generate()
+        test_gen = gen.generate()
+        self.model.compile(optimizer='Adam', loss='categorical_crossentropy')
+
+        self.model.fit(train=train_gen, test=test_gen, epochs=5)
+
+
 if __name__ == '__main__':
     model_params = {
         'lstm':[
@@ -165,3 +185,4 @@ if __name__ == '__main__':
     model = WordPredict(max_len=1000, emb_dim=300, max_words=20000, vocab_size=40000)
     model.build_model(**model_params)
     model.model.summary()
+    model.train()

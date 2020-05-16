@@ -2,3 +2,5 @@
 .idea/
 data/
 embs/
+
+*.pyc
