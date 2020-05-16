@@ -39,4 +39,4 @@ class GridSearcher:
 
 if __name__ == '__main__':
     gs = GridSearcher(grid_params)
-    gs.start_grid_search(num_models=50, bs=2048)
+    gs.start_grid_search(num_models=50, bs=1024)

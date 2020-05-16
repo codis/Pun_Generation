@@ -58,7 +58,7 @@ class Pungen:
         models_folder = os.getcwd() + "/models/" + prefix + " Epoch {epoch:02d}.hdf5"
 
         with open("logs/training_log.txt", "a+") as log:
-            log.write(prefix + '     ' + str(self.model_params))
+            log.write('\n' + prefix + '     ' + str(self.model_params))
 
         early_stop = EarlyStopping(monitor='val_categorical_accuracy', patience=2, restore_best_weights=True, mode='max')
         save_callback = ModelCheckpoint(models_folder, monitor='val_categorical_accuracy', verbose=1, save_best_only=True, mode='max')
