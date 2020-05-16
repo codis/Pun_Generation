@@ -1,4 +1,5 @@
 from tensorflow.keras.preprocessing.text import Tokenizer
+from word_predict import WordPredict
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.utils import to_categorical
 
@@ -10,8 +11,10 @@ class Generator:
     def __init__(self, **kwargs):
         self.bs = int(kwargs.get('batch_size'))
         self.filepath = kwargs.get('filepath')
-        self.texts = []
-        self.init_tokenizer()
+        self.tokenizer = kwargs.get('tokenizer')
+        self.sequences = kwargs.get('sequences')
+      #  self.word_index = kwargs.get('word_index')
+
 
     def form_sentence_input(self, words):
         #### AICI LOC DE OPTIMIZAT - mutam pad sa fie / batch####
@@ -29,18 +32,6 @@ class Generator:
 
         return (pre_words, post_words, to_predict, no_words)
 
-    def init_tokenizer(self):
-        with open(self.filepath, encoding='utf-8') as fp:
-            for line in fp:
-                if line == "\n":
-                    continue
-                self.texts.append(line)
-
-        self.tokenizer = Tokenizer(num_words=20000) #params
-        self.tokenizer.fit_on_texts(self.texts)
-        self.sequences = self.tokenizer.texts_to_sequences(self.texts)
-        self.word_index = self.tokenizer.word_index
-        print('Found %s unique tokens.' % len(self.word_index))
 
     def generate(self):
         if not os.path.isfile(self.filepath):
