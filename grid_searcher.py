@@ -28,9 +28,9 @@ class GridSearcher:
         }
         return grid_dict
 
-    def start_grid_search(self, num_models, bs):
+    def start_grid_search(self, num_models, bs, emb_dim):
         pungen = Pungen(filepath='all.txt', batch_size=bs, max_len=50,
-                        emb_dim=300, max_words=40000, split=0.15)
+                        emb_dim=emb_dim, max_words=40000, split=0.15)
 
         for i in range(num_models):
             model_params = gs.get_model_config()
@@ -39,4 +39,4 @@ class GridSearcher:
 
 if __name__ == '__main__':
     gs = GridSearcher(grid_params)
-    gs.start_grid_search(num_models=50, bs=1024)
+    gs.start_grid_search(num_models=50, bs=1024, emb_dim=300)
