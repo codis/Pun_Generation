@@ -6,7 +6,6 @@ from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.layers import Embedding
 from tensorflow.keras.initializers import Constant
 
-from sklearn.model_selection import train_test_split
 
 import numpy as np
 
@@ -25,8 +24,9 @@ class Pungen:
         self.TEXT_DATA_DIR = os.path.join('', 'data/bookcorpus')
         self.bs = int(kwargs.get('batch_size'))
         self.filepath = kwargs.get('filepath')
-        self._parse_corpus()
-        #self.prepare_emb()
+        self.split = kwargs.get('split')
+        self._parse_corpus(min_seq_len=5)
+        self.prepare_emb()
 
     def create_model(self, model_params):
         word_predict = WordPredict(emb_layer=self.embedding_layer,
@@ -38,12 +38,16 @@ class Pungen:
     def train(self):
         gen = Generator(filepath='all.txt', batch_size=self.bs,
                         tokenizer=self.tokenizer, sequences=self.sequences,
-                        max_words=self.MAX_NUM_WORDS, max_len=self.MAX_SEQUENCE_LENGTH)
-        train_gen = gen.generate()
-        test_gen = gen.generate()
-        #self.model.compile(optimizer='Adam', loss='categorical_crossentropy')
+                        max_words=self.MAX_NUM_WORDS, max_len=self.MAX_SEQUENCE_LENGTH,
+                        split=self.split)
+        train_gen = gen.generate(dataset='train')
+        test_gen = gen.generate(dataset='test')
+        self.model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 
-        self.model.fit(train_gen, validation_data=test_gen, steps_per_epoch= len(self.texts) // self.bs, epochs=5)
+        self.model.fit(train_gen, validation_data=test_gen,
+                       steps_per_epoch= int(len(self.sequences) * (1-self.split) / self.bs),
+                       validation_steps=int(len(self.sequences) * (self.split) / self.bs),
+                       epochs=5)
 
     def prepare_emb(self):
         print('Indexing word vectors.')
@@ -75,7 +79,7 @@ class Pungen:
                                          input_length=self.MAX_SEQUENCE_LENGTH,
                                          trainable=False)
 
-    def _parse_corpus(self):
+    def _parse_corpus(self, min_seq_len):
         print('Indexing word vectors.')
         self.texts = []
         with open(self.filepath, encoding='utf-8') as fp:
@@ -88,12 +92,12 @@ class Pungen:
         self.tokenizer = Tokenizer(num_words=self.MAX_NUM_WORDS, filters=self.filter)  # params
         self.tokenizer.fit_on_texts(self.texts)
         self.sequences = self.tokenizer.texts_to_sequences(self.texts)
+        self.sequences = [x for x in self.sequences if len(x) >= min_seq_len]
         self.word_index = self.tokenizer.word_index
         print('Found %s unique tokens.' % len(self.word_index))
 
-        print('Found %s texts.' % len(self.texts))
+        print('Found %s texts.' % len(self.sequences))
 
-        self.train_sequences, self.test_sequences = train_test_split(self.sequences, test_size=0.2, random_state=42, shuffle=False)
 
     def check_generator(self):
         texts = self.tokenizer.sequences_to_texts(self.sequences)
@@ -140,8 +144,8 @@ if __name__ == '__main__':
         ]
     }
 
-    pungen = Pungen(filepath='all.txt', batch_size=512-, max_len=1000,
-               emb_dim=300, max_words=20000)
+    pungen = Pungen(filepath='all.txt', batch_size=2048, max_len=50,
+               emb_dim=300, max_words=40000, split=0.15)
     pungen.create_model(model_params=model_params)
     pungen.train()
     pungen.check_generator()

@@ -3,6 +3,8 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.utils import to_categorical
 import numpy as np
 import random
+from sklearn.model_selection import train_test_split
+
 import sys
 import os
 
@@ -14,7 +16,8 @@ class Generator:
         self.sequences = kwargs.get('sequences')
         self.MAX_NUM_WORDS = kwargs.get('max_words')
         self.MAX_SEQUENCE_LENGTH = kwargs.get('max_len')
-      #  self.word_index = kwargs.get('word_index')
+        split = kwargs.get('split')
+        self.train_sequences, self.test_sequences = train_test_split(self.sequences, test_size=split, random_state=42, shuffle=False)
 
 
     def form_sentence_input(self, words):
@@ -34,27 +37,31 @@ class Generator:
         return (pre_words, post_words, to_predict, no_words)
 
 
-    def generate(self):
+    def generate(self, dataset):
         fill = 0
         y = []
         x0 = []
         x1 = []
-        for line in self.sequences:
-            if fill < self.bs:
-                if len(line) > 5: # param
+        if dataset == 'train':
+            seq = self.train_sequences
+        elif dataset == 'test':
+            seq = self.test_sequences
+        while True:
+            for line in seq:
+                if fill < self.bs:
                     (pre, post, to_predict, _) = self.form_sentence_input(line)
 
                     x0.append(pre)
                     x1.append(post)
                     y.append(to_predict)
                     fill = fill + 1
-            else:
+                else:
 
-                yield [np.array(x0), np.array(x1)], np.array(y)
-                x0 = []
-                x1 = []
-                y = []
-                fill = 0
+                    yield [np.array(x0), np.array(x1)], np.array(y)
+                    x0 = []
+                    x1 = []
+                    y = []
+                    fill = 0
 
 if __name__ == '__main__':
     gen = Generator(filepath='all.txt', batch_size=32)
