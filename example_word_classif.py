@@ -25,7 +25,9 @@ VALIDATION_SPLIT = 0.2
 
 
 class ExampleWordClassif:
-
+    """
+    built after https://keras.io/examples/pretrained_word_embeddings/
+    """
     def load_embs(self):
         print('Indexing word vectors.')
 
