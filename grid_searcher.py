@@ -42,5 +42,9 @@ class GridSearcher:
             pungen.train(epochs=20)
 
 if __name__ == '__main__':
-    gs = GridSearcher(grid_params)
-    gs.start_grid_search(num_models=50, bs=1024, emb_dim=300)
+    for i in range(10000):
+        try:
+            gs = GridSearcher(grid_params)
+            gs.start_grid_search(num_models=50, bs=1024, emb_dim=300)
+        except:
+            continue
