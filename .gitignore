@@ -2,5 +2,6 @@
 .idea/
 data/
 embs/
-
+logs/
+models/
 *.pyc

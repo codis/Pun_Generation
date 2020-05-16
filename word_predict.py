@@ -7,7 +7,7 @@ from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.layers import Dense, Input, Concatenate, Add
-from tensorflow.keras.layers import Embedding, LSTM, Flatten
+from tensorflow.keras.layers import Dropout, LSTM, Flatten
 from tensorflow.keras.models import Model
 from tensorflow.keras.initializers import Constant
 
@@ -41,8 +41,8 @@ class WordPredict:
         l_post = emb_post
         if lstm:
             for layer in lstm:
-                l_pre = LSTM(layer['pre']['size'])(l_pre)
-                l_post = LSTM(layer['post']['size'])(l_post)
+                l_pre = LSTM(layer)(l_pre)
+                l_post = LSTM(layer)(l_post)
 
         if merge_layer == 'concat':
             merge = Concatenate()([l_pre, l_post])
@@ -50,9 +50,9 @@ class WordPredict:
             merge = Add()([l_pre, l_post])
 
         x_dense = Flatten()(merge)
-        for layer in dense:
-            x_dense = Dense(layer['size'], activation=layer['act'])(x_dense)
-
+        for size in dense['size']:
+            x_dense = Dense(size, activation=dense['act'])(x_dense)
+            x_dense = Dropout(dense['dropout'])(x_dense)
         out = Dense(self.MAX_NUM_WORDS, activation='softmax')(x_dense)
 
         self.model = Model(inputs=[inp_pre, inp_post], outputs=out)

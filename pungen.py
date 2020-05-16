@@ -1,12 +1,12 @@
 from word_predict import WordPredict
 from generator import Generator
 from tensorflow.keras.preprocessing.text import Tokenizer
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.layers import Embedding
 from tensorflow.keras.initializers import Constant
-
-
+from tensorflow.keras.optimizers import Adam, Adagrad, RMSprop, SGD
+from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
+from log_callback import LogCalllback
+import time
 import numpy as np
 
 import os
@@ -34,20 +34,44 @@ class Pungen:
                                    max_words=self.MAX_NUM_WORDS)
         word_predict.build_model(**model_params)
         self.model = word_predict.model
+        self.model_params = model_params
+        if model_params['optimizer'] == 'adam':
+            optimizer = Adam(learning_rate= model_params['lr'])
+        elif model_params['optimizer'] == 'adagrad':
+            optimizer = Adagrad(learning_rate= model_params['lr'])
+        elif model_params['optimizer'] == 'rmsprop':
+            optimizer = RMSprop(learning_rate= model_params['lr'])
+        elif model_params['optimizer'] == 'sgd':
+            optimizer = SGD(learning_rate= model_params['lr'])
+        self.model.compile(optimizer=optimizer,
+                           loss='categorical_crossentropy',
+                           metrics=['categorical_accuracy'])
 
-    def train(self):
+    def train(self, epochs=5):
         gen = Generator(filepath='all.txt', batch_size=self.bs,
                         tokenizer=self.tokenizer, sequences=self.sequences,
                         max_words=self.MAX_NUM_WORDS, max_len=self.MAX_SEQUENCE_LENGTH,
                         split=self.split)
         train_gen = gen.generate(dataset='train')
         test_gen = gen.generate(dataset='test')
-        self.model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+        prefix = str(int(time.time()))
+        models_folder = os.getcwd() + "/models/" + prefix + " Epoch {epoch:02d}.hdf5"
 
+        with open("logs/training_log.txt", "a+") as log:
+            log.write(prefix + '     ' + str(self.model_params))
+
+        early_stop = EarlyStopping(monitor='val_categorical_accuracy', patience=2, restore_best_weights=True, mode='max')
+        save_callback = ModelCheckpoint(models_folder, monitor='val_categorical_accuracy', verbose=1, save_best_only=True, mode='max')
+        log_callback = LogCalllback(prefix=prefix, log_path = os.getcwd() + "/logs/train_log.csv")
         self.model.fit(train_gen, validation_data=test_gen,
                        steps_per_epoch= int(len(self.sequences) * (1-self.split) / self.bs),
                        validation_steps=int(len(self.sequences) * (self.split) / self.bs),
-                       epochs=5)
+                       epochs=epochs,
+                       callbacks=[
+                           early_stop,
+                           save_callback,
+                           log_callback
+                       ])
 
     def prepare_emb(self):
         print('Indexing word vectors.')
@@ -123,25 +147,19 @@ class Pungen:
 
 if __name__ == '__main__':
     model_params = {
-        'lstm_array': [
-            {
-                'pre':
-                    {
-                        'size': 32
-                    },
-                'post':
-                    {
-                        'size': 16
-                    }
-            }
+        'lstm': [
+                [32]
         ],
         'merge_layer': 'concat',
         'dense': [
             {
                 'size': 32,
-                'act': 'elu'
+                'act': 'elu',
+                'dropout': 0.2
             }
-        ]
+        ],
+        'optimizer': 'adam',
+        'lr': 0.01
     }
 
     pungen = Pungen(filepath='all.txt', batch_size=2048, max_len=50,
