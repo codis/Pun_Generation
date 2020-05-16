@@ -6,6 +6,8 @@ from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.layers import Embedding
 from tensorflow.keras.initializers import Constant
 
+from sklearn.model_selection import train_test_split
+
 import numpy as np
 
 import os
@@ -25,7 +27,7 @@ class Pungen:
         self.bs = int(kwargs.get('batch_size'))
         self.filepath = kwargs.get('filepath')
         self._parse_corpus()
-        self.prepare_emb()
+        #self.prepare_emb()
 
     def create_model(self, model_params):
         word_predict = WordPredict(emb_layer=self.embedding_layer,
@@ -35,12 +37,12 @@ class Pungen:
         self.model = word_predict.model
 
     def train(self):
-        gen = Generator(filepath='all.txt', batch_size=32, tokenizer='self.tokenizer', sequences=self.sequences)
+        gen = Generator(filepath='all.txt', batch_size=32, tokenizer=self.tokenizer, sequences=self.sequences)
         train_gen = gen.generate()
         test_gen = gen.generate()
-        self.model.compile(optimizer='Adam', loss='categorical_crossentropy')
+        #self.model.compile(optimizer='Adam', loss='categorical_crossentropy')
 
-        self.model.fit(train_gen, validation_data=test_gen, epochs=5)
+        #self.model.fit(train_gen, validation_data=test_gen, epochs=5)
 
     def prepare_emb(self):
         print('Indexing word vectors.')
@@ -81,13 +83,38 @@ class Pungen:
                     continue
                 self.texts.append(line)
 
-        self.tokenizer = Tokenizer(num_words=20000)  # params
+        self.filter = '!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n©'
+        self.tokenizer = Tokenizer(num_words=200000, filters=self.filter)  # params
         self.tokenizer.fit_on_texts(self.texts)
         self.sequences = self.tokenizer.texts_to_sequences(self.texts)
         self.word_index = self.tokenizer.word_index
         print('Found %s unique tokens.' % len(self.word_index))
 
         print('Found %s texts.' % len(self.texts))
+
+        self.train_sequences, self.test_sequences = train_test_split(self.sequences, test_size=0.2, random_state=42, shuffle=False)
+
+    def check_generator(self):
+        texts = self.tokenizer.sequences_to_texts(self.sequences)
+
+        if len(texts) != len(self.texts):
+            print("Different sizes of texts")
+            return
+
+        filter = set(self.filter)
+
+        for i in range(len(texts)):
+            if texts[i].lower() != self.texts[i][:-1].lower():
+
+                if any((c in filter) for c in self.texts[i][:-1].lower()):
+                    continue
+
+                print(texts[i], self.texts[i][:-1])
+                print(self.texts[i][:-1].lower())
+                print("Tokenizer failed to tokenize properly!")
+                return
+
+        print("Tokenizer check was succesfull!")
 
 if __name__ == '__main__':
     model_params = {
@@ -108,7 +135,8 @@ if __name__ == '__main__':
         ]
     }
 
-    pungen = Pungen(filepath='all.txt', batch_size=32, max_len=1000,
+    pungen = Pungen(filepath='data/bookcorpus/all.txt', batch_size=32, max_len=1000,
                emb_dim=300, max_words=20000, vocab_size=40000)
-    pungen.create_model(model_params=model_params)
+    #pungen.create_model(model_params=model_params)
     pungen.train()
+    pungen.check_generator()
