@@ -22,7 +22,6 @@ class Pungen:
         self.MAX_SEQUENCE_LENGTH = kwargs.get('max_len')
         self.EMBEDDING_DIM = kwargs.get('emb_dim')
         self.MAX_NUM_WORDS = kwargs.get('max_words')
-        self.VOCAB_SIZE = kwargs.get('vocab_size')
         self.TEXT_DATA_DIR = os.path.join('', 'data/bookcorpus')
         self.bs = int(kwargs.get('batch_size'))
         self.filepath = kwargs.get('filepath')
@@ -31,18 +30,20 @@ class Pungen:
 
     def create_model(self, model_params):
         word_predict = WordPredict(emb_layer=self.embedding_layer,
-                                   max_len=1000, emb_dim=300,
-                                   max_words=20000, vocab_size=40000)
+                                   max_len=self.MAX_SEQUENCE_LENGTH, emb_dim=self.EMBEDDING_DIM,
+                                   max_words=self.MAX_NUM_WORDS)
         word_predict.build_model(**model_params)
         self.model = word_predict.model
 
     def train(self):
-        gen = Generator(filepath='all.txt', batch_size=32, tokenizer=self.tokenizer, sequences=self.sequences)
+        gen = Generator(filepath='all.txt', batch_size=self.bs,
+                        tokenizer=self.tokenizer, sequences=self.sequences,
+                        max_words=self.MAX_NUM_WORDS, max_len=self.MAX_SEQUENCE_LENGTH)
         train_gen = gen.generate()
         test_gen = gen.generate()
         #self.model.compile(optimizer='Adam', loss='categorical_crossentropy')
 
-        #self.model.fit(train_gen, validation_data=test_gen, epochs=5)
+        self.model.fit(train_gen, validation_data=test_gen, steps_per_epoch= len(self.texts) // self.bs, epochs=5)
 
     def prepare_emb(self):
         print('Indexing word vectors.')
@@ -84,7 +85,7 @@ class Pungen:
                 self.texts.append(line)
 
         self.filter = '!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n©'
-        self.tokenizer = Tokenizer(num_words=200000, filters=self.filter)  # params
+        self.tokenizer = Tokenizer(num_words=self.MAX_NUM_WORDS, filters=self.filter)  # params
         self.tokenizer.fit_on_texts(self.texts)
         self.sequences = self.tokenizer.texts_to_sequences(self.texts)
         self.word_index = self.tokenizer.word_index
@@ -118,12 +119,16 @@ class Pungen:
 
 if __name__ == '__main__':
     model_params = {
-        'lstm': [
+        'lstm_array': [
             {
-                'size': 32
-            },
-            {
-                'size': 16
+                'pre':
+                    {
+                        'size': 32
+                    },
+                'post':
+                    {
+                        'size': 16
+                    }
             }
         ],
         'merge_layer': 'concat',
@@ -135,8 +140,8 @@ if __name__ == '__main__':
         ]
     }
 
-    pungen = Pungen(filepath='data/bookcorpus/all.txt', batch_size=32, max_len=1000,
-               emb_dim=300, max_words=20000, vocab_size=40000)
-    #pungen.create_model(model_params=model_params)
+    pungen = Pungen(filepath='all.txt', batch_size=512-, max_len=1000,
+               emb_dim=300, max_words=20000)
+    pungen.create_model(model_params=model_params)
     pungen.train()
     pungen.check_generator()

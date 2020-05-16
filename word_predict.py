@@ -7,19 +7,12 @@ from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.layers import Dense, Input, Concatenate, Add
-from tensorflow.keras.layers import Embedding, LSTM
+from tensorflow.keras.layers import Embedding, LSTM, Flatten
 from tensorflow.keras.models import Model
 from tensorflow.keras.initializers import Constant
 
 
 
-BASE_DIR = ''
-GLOVE_DIR = os.path.join(BASE_DIR, 'embs/glove.6B')
-TEXT_DATA_DIR = os.path.join(BASE_DIR, 'data/bookcorpus')
-MAX_SEQUENCE_LENGTH = 1000
-MAX_NUM_WORDS = 20000
-EMBEDDING_DIM = 300
-VALIDATION_SPLIT = 0.2
 
 class WordPredict:
     def __init__(self, **kwargs):
@@ -56,11 +49,11 @@ class WordPredict:
         if merge_layer == 'add':
             merge = Add()([l_pre, l_post])
 
-        x_dense = merge
+        x_dense = Flatten()(merge)
         for layer in dense:
             x_dense = Dense(layer['size'], activation=layer['act'])(x_dense)
 
-        out = Dense(self.VOCAB_SIZE, activation='softmax')(x_dense)
+        out = Dense(self.MAX_NUM_WORDS, activation='softmax')(x_dense)
 
         self.model = Model(inputs=[inp_pre, inp_post], outputs=out)
 
