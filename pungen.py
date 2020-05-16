@@ -77,7 +77,16 @@ class Pungen:
         print('Indexing word vectors.')
 
         self.embeddings_index = {}
-        with open(os.path.join(GLOVE_DIR, 'glove.6B.300d.txt'), encoding='utf-8') as f:
+        if self.EMBEDDING_DIM == 50:
+            emb_name = 'glove.6B.50d.txt'
+        if self.EMBEDDING_DIM == 100:
+            emb_name = 'glove.6B.100d.txt'
+        if self.EMBEDDING_DIM == 200:
+            emb_name = 'glove.6B.200d.txt'
+        if self.EMBEDDING_DIM == 300:
+            emb_name = 'glove.6B.300d.txt'
+
+        with open(os.path.join(GLOVE_DIR, emb_name), encoding='utf-8') as f:
             for line in f:
                 word, coefs = line.split(maxsplit=1)
                 coefs = np.fromstring(coefs, 'f', sep=' ')
