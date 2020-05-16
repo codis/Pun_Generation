@@ -2,11 +2,10 @@ from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.utils import to_categorical
 
-import numpy as np
 import random
 import sys
 import os
-import time
+
 class Generator:
     def __init__(self, **kwargs):
         self.bs = int(kwargs.get('batch_size'))
@@ -28,12 +27,7 @@ class Generator:
         pre_words = pad_sequences([pre_words], maxlen=100)[0]
         post_words = pad_sequences([post_words], maxlen=100)[0]
 
-
         return (pre_words, post_words, to_predict, no_words)
-
-    def form_input(self, sentences, bs=0):
-
-        return self.form_sentence_input(sentences)
 
     def init_tokenizer(self):
         with open(self.filepath, encoding='utf-8') as fp:
@@ -48,13 +42,10 @@ class Generator:
         self.word_index = self.tokenizer.word_index
         print('Found %s unique tokens.' % len(self.word_index))
 
-
-
     def generate(self):
         if not os.path.isfile(self.filepath):
             print("File path {} does not exist. Exiting...".format(self.filepath))
             sys.exit()
-
 
         fill = 0
         x = []
@@ -78,7 +69,6 @@ class Generator:
                 x = []
                 y = []
                 fill = 0
-
 
 if __name__ == '__main__':
     gen = Generator(filepath='all.txt', batch_size=32)
