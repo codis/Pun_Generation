@@ -55,30 +55,29 @@ class Generator:
             print("File path {} does not exist. Exiting...".format(self.filepath))
             sys.exit()
 
-        with open(self.filepath, encoding='utf-8') as fp:
 
-            fill = 0
-            x = []
-            y = []
-            for line in self.sequences:
-                if fill < self.bs:
-                    if len(line) > 5: # param
-                        (pre, post, to_predict, _) = self.form_sentence_input(line)
+        fill = 0
+        x = []
+        y = []
+        for line in self.sequences:
+            if fill < self.bs:
+                if len(line) > 5: # param
+                    (pre, post, to_predict, _) = self.form_sentence_input(line)
 
-                        xi = []
+                    xi = []
 
-                        xi.append(pre)
-                        xi.append(post)
+                    xi.append(pre)
+                    xi.append(post)
 
-                        x.append(xi)
-                        y.append(to_predict)
-                        fill = fill + 1
-                else:
+                    x.append(xi)
+                    y.append(to_predict)
+                    fill = fill + 1
+            else:
 
-                    yield x, y
-                    x = []
-                    y = []
-                    fill = 0
+                yield x, y
+                x = []
+                y = []
+                fill = 0
 
 
 if __name__ == '__main__':
