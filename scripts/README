@@ -1,0 +1,8 @@
+Scripts taken and modified from bookcorpus repo
+
+tokenize_sentlines.py is derived from https://github.com/soskek/bookcorpus
+make_sentlines.py is derived and modified from https://github.com/soskek/bookcorpus
+
+In order to aggregate 20_newsgroup dataset, use this command:
+
+python scripts/make_sentlines.py data/20_newsgroup/ | python scripts/tokenize_sentlines.py  > all.txt
