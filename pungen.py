@@ -1,5 +1,7 @@
 from word_predict import WordPredict
 from generator import Generator
+from retrieve import Retrieve
+
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.layers import Embedding
 from tensorflow.keras.initializers import Constant
@@ -13,7 +15,6 @@ import os
 import sys
 
 BASE_DIR = ''
-
 GLOVE_DIR = os.path.join(BASE_DIR, 'embs/glove.6B')
 
 class Pungen:
@@ -21,12 +22,13 @@ class Pungen:
         self.MAX_SEQUENCE_LENGTH = kwargs.get('max_len')
         self.EMBEDDING_DIM = kwargs.get('emb_dim')
         self.MAX_NUM_WORDS = kwargs.get('max_words')
-        self.TEXT_DATA_DIR = os.path.join('', 'data/bookcorpus')
+        self.TEXT_DATA_DIR = os.path.join('', 'data/bookcorpus/')
+        self.PUN_DATA_DIR = os.path.join('', 'data/semeval/')
         self.bs = int(kwargs.get('batch_size'))
         self.filepath = kwargs.get('filepath')
         self.split = kwargs.get('split')
-        self._parse_corpus(min_seq_len=5)
-        self.prepare_emb()
+        #self._parse_corpus(min_seq_len=5)
+        #self.prepare_emb()
 
     def create_model(self, model_params):
         word_predict = WordPredict(emb_layer=self.embedding_layer,
@@ -131,6 +133,15 @@ class Pungen:
 
         print('Found %s texts.' % len(self.sequences))
 
+    def form_pun(self):
+        retrieve = Retrieve(sentence_path=self.TEXT_DATA_DIR + "all.txt", pun_path=self.PUN_DATA_DIR + "puns.pkl")
+        (pun, sentence, score) = retrieve.retrieve()
+
+        if not sentence:
+            print("No sentence with word {} was found. Exiting...".format(pun[1]))
+            exit()
+
+        print(pun, sentence, score)
 
     def check_generator(self):
         texts = self.tokenizer.sequences_to_texts(self.sequences)
@@ -153,26 +164,26 @@ class Pungen:
                 return
 
         print("Tokenizer check was succesfull!")
-
+#{'lstm': [16], 'dense': {'size': [64, 32], 'dropout': 0, 'act': 'elu'}, 'merge_layer': 'concat', 'optimizer': 'adam', 'lr': 0.0005}
 if __name__ == '__main__':
     model_params = {
-        'lstm': [
-                [32]
-        ],
+        'lstm': [16],
         'merge_layer': 'concat',
-        'dense': [
+        'dense':
             {
-                'size': 32,
+                'size': [64, 32],
                 'act': 'elu',
-                'dropout': 0.2
-            }
-        ],
+                'dropout': 0
+            },
         'optimizer': 'adam',
-        'lr': 0.01
+        'lr': 0.0005
     }
 
-    pungen = Pungen(filepath='all.txt', batch_size=2048, max_len=50,
-               emb_dim=300, max_words=40000, split=0.15)
-    pungen.create_model(model_params=model_params)
-    pungen.train()
-    pungen.check_generator()
+
+
+    pungen = Pungen(filepath='data/news_aggregated/all.txt', batch_size=128, max_len=50,
+               emb_dim=50, max_words=300000, split=0.15)
+    pungen.form_pun()
+    #pungen.create_model(model_params=model_params)
+    #pungen.train()
+    #pungen.check_generator()

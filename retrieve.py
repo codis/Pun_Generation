@@ -4,62 +4,67 @@ import sys
 import os
 import re
 
-def get_pun(pun_path):
-    with open(pun_path, 'rb') as f:
-        pair_puns = pickle.load(f)
+class Retrieve:
 
-    return random.choice(pair_puns)
+    def __init__(self, **kwargs):
+        self.sentence_path = kwargs.get('sentence_path')
+        self.pun_path = kwargs.get('pun_path')
 
-def value(sentence):
-    return 1
+    def get_pun(self):
+        with open(self.pun_path, 'rb') as f:
+            pair_puns = pickle.load(f)
 
-def length_score(words):
-    return 0 - len(words)
+        return random.choice(pair_puns)
 
-def possition_score(index, words):
-    last_index = index[-1]
+    def value(self, sentence):
+        return 1
 
-    return last_index
+    def length_score(self, words):
+        return 0 - len(words)
 
-def eval(index, words):
-    return length_score(words) + possition_score(index, words)
+    def possition_score(self, index, words):
+        last_index = index[-1]
 
-def get_sentence(sentence_path, pun):
-    (_, wa) = pun
-    with open(sentence_path) as fp:
-        max_score = float('-inf')
-        best_sentence = []
-        for line in fp:
-            index = line.rfind(wa)
-            words = re.findall(r'\w+', line)
-            index = [i for i, x in enumerate(words) if wa == x]
+        return last_index
 
-            if len(index) != 0:
-                score = eval(index, words) * value(line)
+    def eval(self, index, words):
+        return self.length_score(words) + self.possition_score(index, words)
 
-                if score > max_score:
-                    max_score = score
-                    best_sentence = line
+    def get_sentence(self, pun):
+        (_, wa) = pun
+        with open(self.sentence_path) as fp:
+            max_score = float('-inf')
+            best_sentence = []
+            for line in fp:
+                index = line.rfind(wa)
+                words = re.findall(r'\w+', line)
+                index = [i for i, x in enumerate(words) if wa == x]
 
-    return max_score, best_sentence
+                if len(index) != 0:
+                    score = self.eval(index, words) * self.value(line)
 
-def main():
-    sentence_path = sys.argv[1]
-    pun_path = sys.argv[2]
+                    if score > max_score:
+                        max_score = score
+                        best_sentence = line
 
-    if not os.path.isfile(sentence_path):
-        print("File path for Sentence data: {} does not exist. Exiting...".format(sentence_path))
-        sys.exit()
+        return max_score, best_sentence
 
-    if not os.path.isfile(pun_path):
-        print("File path for Puns data: {} does not exist. Exiting...".format(pun_path))
-        sys.exit()
+    def retrieve(self):
+        if not os.path.isfile(self.sentence_path):
+            print("File path for Sentence data: {} does not exist. Exiting...".format(self.sentence_path))
+            sys.exit()
 
-    pun = get_pun(pun_path)
-    print(pun)
+        if not os.path.isfile(self.pun_path):
+            print("File path for Puns data: {} does not exist. Exiting...".format(self.pun_path))
+            sys.exit()
 
-    score, sentence = get_sentence(sentence_path, pun)
-    print(score, sentence)
+        pun = self.get_pun()
+        score, sentence = self.get_sentence(pun)
+
+        return pun, sentence, score
 
 if __name__ == '__main__':
-    print(main())
+    sentence_path = "data/bookcorpus/all.txt"
+    pun_path = "data/semeval/puns.pkl"
+    retrieve = Retrieve(sentence_path=sentence_path, pun_path=pun_path)
+    (pun, sentence, score) = retrieve.retrieve()
