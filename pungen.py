@@ -1,4 +1,5 @@
 from word_predict import WordPredict
+from similar import WordSimilarity
 from generator import Generator
 from retrieve import Retrieve
 
@@ -10,6 +11,13 @@ from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from log_callback import LogCalllback
 import time
 import numpy as np
+
+import nltk
+from nltk.tokenize import word_tokenize
+nltk.download('punkt')
+nltk.download('averaged_perceptron_tagger')
+
+
 
 import os
 import sys
@@ -141,7 +149,28 @@ class Pungen:
             print("No sentence with word {} was found. Exiting...".format(pun[1]))
             exit()
 
+        text = word_tokenize(sentence)
+        tokenized = nltk.pos_tag(text)
+
+        print(tokenized)
         print(pun, sentence, score)
+
+        index = -1
+        topic_word = None
+        for (word, pos) in tokenized:
+            index = index + 1
+            if pos == 'NN':
+                topic_word = word
+                print(word, pos)
+                break
+
+        wordsimilarity = WordSimilarity()
+        wordsimilarity.word2vec()
+        wordsimilarity.load()
+        result = wordsimilarity.getSimilar([topic_word, pun[1]], 5)
+        print(result)
+
+
 
     def check_generator(self):
         texts = self.tokenizer.sequences_to_texts(self.sequences)

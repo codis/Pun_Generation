@@ -19,8 +19,8 @@ class WordSimilarity:
         filename = 'glove.6B.50d.txt.word2vec'
         self.model = KeyedVectors.load_word2vec_format(filename, binary=False)
 
-    def getSimilar(self, word, topn):
-        result = self.model.most_similar(positive=['programmer'], topn=topn)
+    def getSimilar(self, words, topn):
+        result = self.model.most_similar(positive=words, topn=topn)
         return result
 
     def example(self):
