@@ -123,7 +123,7 @@ class DAC:
                                    mode='max')
         save_callback = ModelCheckpoint(models_folder, monitor='val_categorical_accuracy', verbose=1,
                                         save_best_only=True, mode='max')
-        log_callback = LogCalllback(prefix=prefix, log_path=os.getcwd() + "/logs/train_log.csv")
+        log_callback = LogCalllback(prefix=prefix, log_path=os.getcwd() + "/logs/dac_train_log.csv")
 
         gen = Generator(filepath='all.txt', batch_size=self.pungen.bs,
                         tokenizer=self.pungen.tokenizer, sequences=self.pungen.sequences,
@@ -152,7 +152,7 @@ class DAC:
                                    mode='max')
         save_callback = ModelCheckpoint(models_folder, monitor='val_categorical_accuracy', verbose=1,
                                         save_best_only=True, mode='max')
-        log_callback = LogCalllback(prefix=prefix, log_path=os.getcwd() + "/logs/train_log.csv")
+        log_callback = LogCalllback(prefix=prefix, log_path=os.getcwd() + "/logs/dac_train_log.csv")
 
         full_model.fit(train_gen, validation_data=test_gen,
                        steps_per_epoch=int(len(self.pungen.sequences) * (1 - self.pungen.split) / self.pungen.bs),
