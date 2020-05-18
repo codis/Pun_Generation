@@ -68,8 +68,8 @@ class DAC:
         td = TimeDistributed(Dense(no_words, activation='softmax', name='softmax_layer'))(x)
 
         model = Model(inputs = encoder_inputs, outputs=td)
-        opt = Adam(lr=lr)
-        model.compile(optimizer=opt, loss='categorical_crossentropy')
+        opt = Adam(learning_rate=lr)
+        model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['categorical_accuracy'])
         model.summary()
         return model
 
@@ -141,8 +141,6 @@ class DAC:
                            save_callback,
                            log_callback
                        ],
-                       # steps_per_epoch=int(33752/4),
-                       # validation_steps=int(6132/4),
                        epochs=pretrain_epochs,
                        )
 
@@ -171,18 +169,15 @@ class DAC:
 
 if __name__ == '__main__':
     dac = DAC()
-    gen = Generator(filepath='all.txt', batch_size=dac.pungen.bs,
-                     sequences=dac.pungen.sequences,
-                    max_words=dac.pungen.MAX_NUM_WORDS, max_len=dac.pungen.MAX_SEQUENCE_LENGTH,
-                    split=dac.pungen.split)
-    print(gen.sequences[0])
+
     model_params = {
         'size':[64, 64],
         'lr': 0.01
     }
+
     full_model = dac.build_model3(hidden_sizes=[64, 64], seq_len=50, no_words=40000,emb_layer=dac.pungen.embedding_layer, lr=0.01)
     dac.train(full_model=full_model, model_params=model_params, pretrain_epochs=4, epochs=10)
-
+    exit()
     model_params = {
         'size':[64, 64],
         'lr': 0.01
