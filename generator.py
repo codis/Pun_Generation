@@ -12,7 +12,6 @@ class Generator:
     def __init__(self, **kwargs):
         self.bs = int(kwargs.get('batch_size'))
         self.filepath = kwargs.get('filepath')
-        self.tokenizer = kwargs.get('tokenizer')
         self.sequences = kwargs.get('sequences')
         self.MAX_NUM_WORDS = kwargs.get('max_words')
         self.MAX_SEQUENCE_LENGTH = kwargs.get('max_len')

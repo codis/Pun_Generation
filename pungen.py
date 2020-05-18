@@ -35,8 +35,8 @@ class Pungen:
         self.bs = int(kwargs.get('batch_size'))
         self.filepath = kwargs.get('filepath')
         self.split = kwargs.get('split')
-        #self._parse_corpus(min_seq_len=5)
-        #self.prepare_emb()
+        self._parse_corpus(min_seq_len=5)
+        self.prepare_emb()
 
     def create_model(self, model_params):
         word_predict = WordPredict(emb_layer=self.embedding_layer,
