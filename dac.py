@@ -177,7 +177,6 @@ if __name__ == '__main__':
 
     full_model = dac.build_model3(hidden_sizes=[64, 64], seq_len=50, no_words=40000,emb_layer=dac.pungen.embedding_layer, lr=0.01)
     dac.train(full_model=full_model, model_params=model_params, pretrain_epochs=4, epochs=10)
-    exit()
     model_params = {
         'size':[64, 64],
         'lr': 0.01
