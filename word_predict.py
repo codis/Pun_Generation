@@ -1,33 +1,25 @@
 from __future__ import print_function
 
 import os
-import sys
-import numpy as np
-from tensorflow.keras.preprocessing.text import Tokenizer
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow.keras.utils import to_categorical
+import time
+
+from tensorflow.keras.optimizers import Adam, Adagrad, RMSprop, SGD
 from tensorflow.keras.layers import Dense, Input, Concatenate, Add
 from tensorflow.keras.layers import Dropout, LSTM, Flatten
 from tensorflow.keras.models import Model
-from tensorflow.keras.initializers import Constant
 
-
+from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
+from log_callback import LogCalllback
 
 
 class WordPredict:
     def __init__(self, **kwargs):
         self.MAX_SEQUENCE_LENGTH = kwargs.get('max_len')
-        self.EMBEDDING_DIM = kwargs.get('emb_dim')
         self.MAX_NUM_WORDS = kwargs.get('max_words')
-        self.VOCAB_SIZE = kwargs.get('vocab_size')
-        self.TEXT_DATA_DIR = os.path.join('', 'data/bookcorpus')
-
         self.embedding_layer = kwargs.get('emb_layer')
-
 
     def build_model(self, **kwargs):
         lstm = kwargs.get('lstm_array', None)
-        cnn = kwargs.get('cnn_array', None)
         merge_layer = kwargs.get('merge_layer')
         dense = kwargs.get('dense')
 
@@ -57,7 +49,45 @@ class WordPredict:
 
         self.model = Model(inputs=[inp_pre, inp_post], outputs=out)
 
+    def compile_model(self, model_params):
+        self.model_params = model_params
+        if model_params['optimizer'] == 'adam':
+            optimizer = Adam(learning_rate=model_params['lr'])
+        elif model_params['optimizer'] == 'adagrad':
+            optimizer = Adagrad(learning_rate=model_params['lr'])
+        elif model_params['optimizer'] == 'rmsprop':
+            optimizer = RMSprop(learning_rate=model_params['lr'])
+        elif model_params['optimizer'] == 'sgd':
+            optimizer = SGD(learning_rate=model_params['lr'])
 
+        self.model.compile(optimizer=optimizer,
+                           loss='categorical_crossentropy',
+                           metrics=['categorical_accuracy'])
+
+
+    def train(self, generator, bs, split, epochs=5):
+        train_gen = generator.generate(dataset='train')
+        test_gen = generator.generate(dataset='test')
+
+        prefix = str(int(time.time()))
+        models_folder = os.getcwd() + "/models/" + prefix + " Epoch {epoch:02d}.hdf5"
+        with open("logs/training_log.txt", "a+") as log:
+            log.write('\n' + prefix + '     ' + str(self.model_params))
+
+        early_stop = EarlyStopping(monitor='val_categorical_accuracy', patience=2, restore_best_weights=True,
+                                   mode='max')
+        save_callback = ModelCheckpoint(models_folder, monitor='val_categorical_accuracy', verbose=1,
+                                        save_best_only=True, mode='max')
+        log_callback = LogCalllback(prefix=prefix, log_path=os.getcwd() + "/logs/train_log.csv")
+        self.model.fit(train_gen, validation_data=test_gen,
+                       steps_per_epoch=int(len(generator.sequences) * (1 - split) / bs),
+                       validation_steps=int(len(generator.sequences) * (split) / bs),
+                       epochs=epochs,
+                       callbacks=[
+                           early_stop,
+                           save_callback,
+                           log_callback
+                       ])
 
 if __name__ == '__main__':
     model_params = {

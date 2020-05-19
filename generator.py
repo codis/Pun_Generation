@@ -1,23 +1,21 @@
-from word_predict import WordPredict
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow.keras.utils import to_categorical
 import numpy as np
 import random
-from sklearn.model_selection import train_test_split
 
-import sys
-import os
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.utils import to_categorical
+
+from sklearn.model_selection import train_test_split
 
 class Generator:
     def __init__(self, **kwargs):
         self.bs = int(kwargs.get('batch_size'))
-        self.filepath = kwargs.get('filepath')
         self.sequences = kwargs.get('sequences')
         self.MAX_NUM_WORDS = kwargs.get('max_words')
         self.MAX_SEQUENCE_LENGTH = kwargs.get('max_len')
-        split = kwargs.get('split')
-        self.train_sequences, self.test_sequences = train_test_split(self.sequences, test_size=split, random_state=42, shuffle=False)
 
+        split = kwargs.get('split')
+
+        self.train_sequences, self.test_sequences = train_test_split(self.sequences, test_size=split, random_state=42, shuffle=False)
 
     def form_sentence_input(self, words):
         #### AICI LOC DE OPTIMIZAT - mutam pad sa fie / batch####
@@ -165,7 +163,6 @@ class Generator:
                     x_dec = []
                     y_dec = []
                     fill = 0
-
 
     def generate(self, dataset):
         fill = 0

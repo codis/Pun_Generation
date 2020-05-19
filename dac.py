@@ -10,11 +10,16 @@ from pungen import Pungen
 import numpy as np
 from generator import Generator
 
+from tensorflow.compat.v1 import ConfigProto
+from tensorflow.compat.v1 import InteractiveSession
+config = ConfigProto()
+config.gpu_options.allow_growth = True
+session = InteractiveSession(config=config)
 
 class DAC:
     def __init__(self):
-        self.pungen = Pungen(filepath='all.txt', batch_size=64, max_len=50,
-                        emb_dim=100, max_words=40000, split=0.15)
+        self.pungen = Pungen(filepath='all.txt', batch_size=16, max_len=50,
+                        emb_dim=50, max_words=40000, split=0.15)
     def build_model(self, hidden_size, seq_len, no_words, emb_layer):
         """ Defining a NMT model """
 
