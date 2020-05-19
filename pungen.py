@@ -2,6 +2,7 @@ from word_predict import WordPredict
 from similar import WordSimilarity
 from generator import Generator
 from retrieve import Retrieve
+from dac import DAC
 
 from tensorflow.keras.layers import Embedding
 from tensorflow.keras.initializers import Constant
@@ -9,6 +10,7 @@ from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.models import load_model
 
 import numpy as np
+import random
 
 import nltk
 from nltk.tokenize import word_tokenize
@@ -26,25 +28,30 @@ GLOVE_DIR = os.path.join(BASE_DIR, 'embs/glove.6B')
 PUN_DATA_DIR = os.path.join('', 'data/semeval/')
 TEXT_DATA_DIR = os.path.join('', 'data/bookcorpus/')
 
-EMBEDDING_DIM = 50
 
 MIN_SEQ_LEN = 5
 TOKEN_FILTER = '!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n©'
 
 
-# Predict Model
+# Corpus Parse
 MAX_NUM_WORDS = 300000
-PREDICT_MAX_LEN = 50
+MAX_LEN = 50
+EMBEDDING_DIM = 50
+
+# Predict Model
 PREDICT_SPLIT = 0.15
 PREDICT_BS = 128
 PREDICT_EPOCHS = 20
 
 # Smoother Model
+SMOOTH_SPLIT = 0.15
+SMOOTH_BS = 16
+SMOOTH_EPOCHS = 10
 
 class Pungen:
     def __init__(self, **kwargs):
         self.filepath = kwargs.get('filepath')
-        self.generator = None
+        self.embedding_layer = None
 
     def _parse_corpus(self, min_seq_len, filepath):
         print('Indexing word vectors.')
@@ -129,9 +136,6 @@ class Pungen:
         text = word_tokenize(sentence)
         tokenized = nltk.pos_tag(text)
 
-        print(tokenized)
-        print(pun, sentence, score)
-
         index = -1
         topic_word = None
         for (word, pos) in tokenized:
@@ -141,11 +145,29 @@ class Pungen:
                 print(word, pos)
                 break
 
-        wordsimilarity = WordSimilarity()
-        wordsimilarity.word2vec()
-        wordsimilarity.load()
-        result = wordsimilarity.getSimilar([pun[0]], 5)
-        print(result)
+        index = -1
+        for (word, pos) in tokenized:
+            index = index + 1
+            if word == pun[1]:
+                print(word, pos)
+                break
+
+        print(sentence, pun[0], pun[1])
+        pre = self.tokenizer.texts_to_sequences([sentence])
+        wp = self.tokenizer.texts_to_sequences([pun[0]])
+        wa = self.tokenizer.texts_to_sequences([pun[1]])
+        print(pre)
+        print(wp, wa)
+        pre[index] = wp
+
+        post = self.tokenizer.sequences_to_texts(pre)
+        print(post)
+
+        #wordsimilarity = WordSimilarity()
+        #wordsimilarity.word2vec()
+        #wordsimilarity.load()
+        #result = wordsimilarity.getSimilar([pun[0]], 5)
+        #print(result)
 
     def init_prerequisite(self):
 
@@ -154,26 +176,35 @@ class Pungen:
         pass
 
     def train_predict_model(self, model_params):
-        self._parse_corpus(MIN_SEQ_LEN, TEXT_DATA_DIR + TEXT_DATA)
-        self.prepare_emb(EMBEDDING_DIM, PREDICT_MAX_LEN)
-
-        predict_word = WordPredict(max_len=PREDICT_MAX_LEN, max_words=MAX_NUM_WORDS, emb_layer=self.embedding_layer)
+        predict_word = WordPredict(max_len=MAX_LEN, max_words=MAX_NUM_WORDS, emb_layer=self.embedding_layer)
         predict_word.build_model(**model_params)
         predict_word.compile_model(model_params)
 
-        if self.generator is None:
-            self.generator = Generator(sequences=self.sequences, batch_size=PREDICT_BS,
-                              max_words=MAX_NUM_WORDS, max_len=PREDICT_MAX_LEN,
-                              split=PREDICT_SPLIT)
+        generator = Generator(sequences=self.sequences, batch_size=PREDICT_BS,
+                          max_words=MAX_NUM_WORDS, max_len=MAX_LEN,
+                          split=PREDICT_SPLIT)
 
-        predict_word.train(self.generator, PREDICT_BS, PREDICT_SPLIT, PREDICT_EPOCHS)
+        predict_word.train(generator, PREDICT_BS, PREDICT_SPLIT, PREDICT_EPOCHS)
         return predict_word
 
     def load_predict_model(self, path):
         predict_word = load_model(path)
         return predict_word
 
+    def train_dac_model(self, model_params):
+        dac = DAC()
+        smoother_model = dac.build_model3(hidden_sizes=[64, 64], seq_len=50, no_words=40000,
+                                      emb_layer=self.embedding_layer, lr=0.01)
+        generator = Generator(sequences=self.sequences, batch_size=SMOOTH_BS,
+                                   max_words=MAX_NUM_WORDS, max_len=MAX_LEN,
+                                   split=PREDICT_SPLIT)
+        smoother_model = dac.train(generator, full_model=smoother_model, model_params=model_params,
+                                   bs=SMOOTH_BS, split=SMOOTH_SPLIT, pretrain_epochs=4,
+                                   epochs=SMOOTH_EPOCHS)
+
     def run(self, predict_path, smoother_path):
+        self._parse_corpus(MIN_SEQ_LEN, TEXT_DATA_DIR + TEXT_DATA)
+        self.prepare_emb(EMBEDDING_DIM, MAX_LEN)
 
         predict_model = None
         if predict_path is None:
@@ -191,11 +222,16 @@ class Pungen:
             }
             predict_model = self.train_predict_model(model_params)
         else:
-            predict_model = self.load_predict_model(predict_path)
-
-        if smoother_path is None:
-            # Run trainning
             pass
+            #predict_model = self.load_predict_model(predict_path)
+
+        #smoother_model = None
+        if smoother_path is None:
+            model_params = {
+                'size': [64, 64],
+                'lr': 0.01
+            }
+            #smoother_model = self.train_dac_model(model_params)
         else:
             pass
 
@@ -204,4 +240,5 @@ class Pungen:
 
 if __name__ == '__main__':
     pungen = Pungen(filepath='data/bookcorpus/all.txt')
+    #'models/smoother/1589835246 - pretraining Epoch 04.hdf5'
     pungen.run('models/1589665956 Epoch 20.hdf5', None)
