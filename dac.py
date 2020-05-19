@@ -16,7 +16,7 @@ class DAC:
     def __init__(self):
         pass
 
-    def build_model3(self, hidden_sizes, seq_len, no_words, emb_layer, lr):
+    def build_model(self, hidden_sizes, seq_len, no_words, emb_layer, lr):
         encoder_inputs = Input(shape=(seq_len,), name='encoder_inputs')
         encoder_emb = emb_layer(encoder_inputs)
 
@@ -24,9 +24,6 @@ class DAC:
 
         for size in hidden_sizes:
             x = LSTM(size, return_sequences=True)(x)
-
-
-
 
         td = TimeDistributed(Dense(no_words, activation='softmax', name='softmax_layer'))(x)
 
@@ -63,8 +60,8 @@ class DAC:
                        epochs=pretrain_epochs,
                        )
 
-        train_gen = gen.generate_enc_dec2('train')
-        test_gen = gen.generate_enc_dec2('test')
+        train_gen = generator.generate_enc_dec2('train')
+        test_gen = generator.generate_enc_dec2('test')
         models_folder = os.getcwd() + "/models/smoother/" + prefix + " - training Epoch {epoch:02d}.hdf5"
 
         early_stop = EarlyStopping(monitor='val_categorical_accuracy', patience=2, restore_best_weights=True,
@@ -74,8 +71,8 @@ class DAC:
         log_callback = LogCalllback(prefix=prefix, log_path=os.getcwd() + "/logs/dac_train_log.csv")
 
         full_model.fit(train_gen, validation_data=test_gen,
-                       steps_per_epoch=int(len(self.pungen.sequences) * (1 - self.pungen.split) / self.pungen.bs),
-                       validation_steps=int(len(self.pungen.sequences) * (self.pungen.split) / self.pungen.bs),
+                       steps_per_epoch=int(len(generator.sequences) * (1 - split) / bs),
+                       validation_steps=int(len(generator.sequences) * (split) / bs),
                       # steps_per_epoch=int(33752/4),
                       # validation_steps=int(6132/4),
                        callbacks=[
@@ -94,34 +91,34 @@ if __name__ == '__main__':
         'lr': 0.01
     }
 
-    full_model = dac.build_model3(hidden_sizes=[64, 64], seq_len=50, no_words=40000,emb_layer=dac.pungen.embedding_layer, lr=0.01)
+    full_model = dac.build_model(hidden_sizes=[64, 64], seq_len=50, no_words=40000,emb_layer=dac.pungen.embedding_layer, lr=0.01)
     dac.train(full_model=full_model, model_params=model_params, pretrain_epochs=4, epochs=10)
     model_params = {
         'size':[64, 64],
         'lr': 0.01
     }
-    full_model = dac.build_model3(hidden_sizes=[128, 64], seq_len=50, no_words=40000,emb_layer=dac.pungen.embedding_layer, lr=0.01)
+    full_model = dac.build_model(hidden_sizes=[128, 64], seq_len=50, no_words=40000,emb_layer=dac.pungen.embedding_layer, lr=0.01)
     dac.train(full_model=full_model, model_params=model_params, pretrain_epochs=4, epochs=10)
 
     model_params = {
         'size':[128, 64],
         'lr': 0.01
     }
-    full_model = dac.build_model3(hidden_sizes=[128, 128], seq_len=50, no_words=40000,emb_layer=dac.pungen.embedding_layer, lr=0.01)
+    full_model = dac.build_model(hidden_sizes=[128, 128], seq_len=50, no_words=40000,emb_layer=dac.pungen.embedding_layer, lr=0.01)
     dac.train(full_model=full_model, model_params=model_params, pretrain_epochs=4, epochs=10)
 
     model_params = {
         'size':[128, 128],
         'lr': 0.01
     }
-    full_model = dac.build_model3(hidden_sizes=[32, 32], seq_len=50, no_words=40000,emb_layer=dac.pungen.embedding_layer, lr=0.01)
+    full_model = dac.build_model(hidden_sizes=[32, 32], seq_len=50, no_words=40000,emb_layer=dac.pungen.embedding_layer, lr=0.01)
     dac.train(full_model=full_model, model_params=model_params, pretrain_epochs=4, epochs=10)
 
     model_params = {
         'size':[64, 64],
         'lr': 0.05
     }
-    full_model = dac.build_model3(hidden_sizes=[64, 64], seq_len=50, no_words=40000,
+    full_model = dac.build_model(hidden_sizes=[64, 64], seq_len=50, no_words=40000,
                                   emb_layer=dac.pungen.embedding_layer, lr=0.05)
     dac.train(full_model=full_model, model_params=model_params, pretrain_epochs=4, epochs=10)
 
@@ -129,7 +126,7 @@ if __name__ == '__main__':
         'size':[128, 64],
         'lr': 0.05
     }
-    full_model = dac.build_model3(hidden_sizes=[128, 64], seq_len=50, no_words=40000,
+    full_model = dac.build_model(hidden_sizes=[128, 64], seq_len=50, no_words=40000,
                                   emb_layer=dac.pungen.embedding_layer, lr=0.05)
     dac.train(full_model=full_model, model_params=model_params, pretrain_epochs=4, epochs=10)
 
@@ -137,7 +134,7 @@ if __name__ == '__main__':
         'size':[128, 128],
         'lr': 0.05
     }
-    full_model = dac.build_model3(hidden_sizes=[128, 128], seq_len=50, no_words=40000,
+    full_model = dac.build_model(hidden_sizes=[128, 128], seq_len=50, no_words=40000,
                                   emb_layer=dac.pungen.embedding_layer, lr=0.05)
     dac.train(full_model=full_model, model_params=model_params, pretrain_epochs=4, epochs=10)
 
@@ -145,7 +142,7 @@ if __name__ == '__main__':
         'size':[32, 32],
         'lr': 0.05
     }
-    full_model = dac.build_model3(hidden_sizes=[32, 32], seq_len=50, no_words=40000,
+    full_model = dac.build_model(hidden_sizes=[32, 32], seq_len=50, no_words=40000,
                                   emb_layer=dac.pungen.embedding_layer, lr=0.05)
     dac.train(full_model=full_model, model_params=model_params, pretrain_epochs=4, epochs=10)
 

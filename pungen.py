@@ -10,7 +10,6 @@ from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.models import load_model
 
 import numpy as np
-import random
 
 import nltk
 from nltk.tokenize import word_tokenize
@@ -169,12 +168,6 @@ class Pungen:
         #result = wordsimilarity.getSimilar([pun[0]], 5)
         #print(result)
 
-    def init_prerequisite(self):
-
-        # Implement this only if all models need parse_corpus, prepare_emb and generator
-
-        pass
-
     def train_predict_model(self, model_params):
         predict_word = WordPredict(max_len=MAX_LEN, max_words=MAX_NUM_WORDS, emb_layer=self.embedding_layer)
         predict_word.build_model(**model_params)
@@ -193,11 +186,11 @@ class Pungen:
 
     def train_dac_model(self, model_params):
         dac = DAC()
-        smoother_model = dac.build_model3(hidden_sizes=[64, 64], seq_len=50, no_words=40000,
+        smoother_model = dac.build_model(hidden_sizes=[64, 64], seq_len=50, no_words=40000,
                                       emb_layer=self.embedding_layer, lr=0.01)
         generator = Generator(sequences=self.sequences, batch_size=SMOOTH_BS,
                                    max_words=MAX_NUM_WORDS, max_len=MAX_LEN,
-                                   split=PREDICT_SPLIT)
+                                   split=SMOOTH_SPLIT)
         smoother_model = dac.train(generator, full_model=smoother_model, model_params=model_params,
                                    bs=SMOOTH_BS, split=SMOOTH_SPLIT, pretrain_epochs=4,
                                    epochs=SMOOTH_EPOCHS)
