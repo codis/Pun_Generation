@@ -3,6 +3,7 @@ from similar import WordSimilarity
 from generator import Generator
 from retrieve import Retrieve
 from dac import DAC
+from evaluate import Evaluate
 
 from tensorflow.keras.layers import Embedding
 from tensorflow.keras.initializers import Constant
@@ -178,8 +179,8 @@ class Pungen:
                     index_topic = index_topic + 1
 
                 result = wordsimilarity.getSimilar([topic_word,  pun[0]], [pun[1]], 10)
-                temp = wordsimilarity.getSimilar([topic_word,  pun[0]], [pun[1]], 10)
-                result.extend(temp)
+                other_result = wordsimilarity.getSimilar([pun[0]], [], 10)
+
                 break
             except KeyError:
                 print("Word {} is not in vocabulary, try with the next one".format(topic_word))
@@ -192,12 +193,14 @@ class Pungen:
         eval_surprisal.load_model(eval_path)
 
         finals = []
+        mean_amalgam = 0
         for (word, prob) in result:
             swap = self.tokenizer.texts_to_sequences([word])
 
             context_window = 2
-            surprise = eval_surprisal.compute_surpisal(sentence=sentence, pun_word=wp,
-                                      pun_alternative=wa, context_window=context_window)
+            surprise = eval_surprisal.compute_surpisal(sentence=pre[0], pun_word=wa[0][0],
+                                      pun_alternative=wp[0][0], context_window=context_window)
+            mean_amalgam = mean_amalgam + surprise
             print(surprise)
     
 
@@ -214,8 +217,38 @@ class Pungen:
             post_smoothing = self.tokenizer.sequences_to_texts(post_smoothing.tolist())
             finals.append(post_smoothing)
             print(post_smoothing)
+        print(finals)
+        print(mean_amalgam / 10)
 
-        return finals
+        other_finals = []
+        mean_similar = 0
+        for (word, prob) in other_result:
+            swap = self.tokenizer.texts_to_sequences([word])
+
+            context_window = 2
+            surprise = eval_surprisal.compute_surpisal(sentence=pre[0], pun_word=wa[0][0],
+                                      pun_alternative=wp[0][0], context_window=context_window)
+            mean_similar = mean_similar + surprise
+            print(surprise)
+    
+
+            pre[0][index_topic] = swap[0][0]
+
+            post_simple = self.tokenizer.sequences_to_texts([pre[0]])
+            print(post_simple)
+
+            pre[0][index_topic + 1] = 0
+            if index_topic >= 2:
+                pre[0][index_topic - 1] = 0
+
+            post_smoothing = self.dac.inference(pre[0])
+            post_smoothing = self.tokenizer.sequences_to_texts(post_smoothing.tolist())
+            other_finals.append(post_smoothing)
+            print(post_smoothing)
+        print(other_finals)
+        print(mean_similar / 10)
+
+        return finals.extend(other_finals)
 
     def train_predict_model(self, model_params):
         predict_word = WordPredict(max_len=MAX_LEN, max_words=MAX_NUM_WORDS, emb_layer=self.embedding_layer)
@@ -283,7 +316,7 @@ class Pungen:
             try:
                 final = pungen.form_pun(eval_path)
                 break
-            except Exception:
+            except Exception :
                 pass
 
         print(final)

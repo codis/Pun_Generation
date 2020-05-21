@@ -28,6 +28,9 @@ class Evaluate:
         print("global surprizal - {}".format(s_global))
         print("local surprizal - {}".format(s_local))
 
+        if s_local / s_global <= 0:
+            return -1
+
         return -np.log(s_local/s_global)
 
 if __name__ == '__main__':
