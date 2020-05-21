@@ -31,14 +31,14 @@ class Evaluate:
         if s_local / s_global <= 0:
             return -1
 
-        return -np.log(s_local/s_global)
+        return s_local/s_global
 
 if __name__ == '__main__':
     eval = Evaluate()
     eval.load_model('models/1589672236 Epoch 16.hdf5')
     sentence = [9, 3990, 19, 686, 2569, 8, 547, 44, 1, 1472]
-    pun_word = 1472
-    pun_alternative = 1829
+    pun_word = 1829
+    pun_alternative = 1472
     context_window = 2
     surprizal = eval.compute_surpisal(sentence=sentence, pun_word=pun_word,
                                       pun_alternative=pun_alternative, context_window=context_window)
