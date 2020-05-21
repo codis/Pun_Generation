@@ -124,13 +124,13 @@ class Pungen:
 
         print("Tokenizer check was succesfull!")
 
-    def form_pun(self):
+    def form_pun(self, eval_path):
         retrieve = Retrieve(sentence_path=TEXT_DATA_DIR + TEXT_DATA, pun_path=PUN_DATA_DIR + PUN_DATA)
         (pun, sentence, score) = retrieve.retrieve()
 
         if not sentence:
             print("No sentence with word {} was found. Exiting...".format(pun[1]))
-            exit()
+            raise Exception()
 
         text = word_tokenize(sentence)
         tokenized = nltk.pos_tag(text)
@@ -141,10 +141,9 @@ class Pungen:
         wp = self.tokenizer.texts_to_sequences([pun[0]])
         wa = self.tokenizer.texts_to_sequences([pun[1]])
 
-        print(pre, wp, wa)
         if (not wa[0]) or (not wp[0]):
             print("The pair of pun and word does not exist in the parsed corpus. Exit...")
-            exit()
+            raise Exception()
 
         index_wa = -1
         for seq in pre[0]:
@@ -159,34 +158,64 @@ class Pungen:
 
         try_limit = 5
         try_count = 0
+        index_topic = 0
         while True:
             try:
-                index_topic = -1
                 topic_word = None
-                for (word, pos) in tokenized:
-                    index_topic = index_topic + 1
-                    if (pos == 'NN') or (pos == 'PRP') or (pos == 'NNP') or (pos == 'NNS') or (pos == 'PRP$'):
-                        topic_word = word
+                for i in range(index_topic, len(tokenized)):
+                    (word, pos) = tokenized[i]
+                    if (pos == 'NNP'):
+                        topic_word = "man"
                         print(word, pos)
+                        index_topic = index_topic + 1
                         break
 
-                result = wordsimilarity.getSimilar([topic_word,  pun[0]], [pun[1]], 5)
+                    if (pos == 'NN') or (pos == 'PRP') or (pos == 'NNS') or (pos == 'PRP$'):
+                        topic_word = word
+                        print(word, pos)
+                        index_topic = index_topic + 1
+                        break
+                    index_topic = index_topic + 1
+
+                result = wordsimilarity.getSimilar([topic_word,  pun[0]], [pun[1]], 10)
+                temp = wordsimilarity.getSimilar([topic_word,  pun[0]], [pun[1]], 10)
+                result.extend(temp)
                 break
             except KeyError:
                 print("Word {} is not in vocabulary, try with the next one".format(topic_word))
                 try_count = try_count + 1
                 if try_limit ==  try_count:
                     print("Limit of trys has been reached. Exit...")
-                    break
+                    raise Exception()
 
-        swap = self.tokenizer.texts_to_sequences([result[0][0]])
+        eval_surprisal = Evaluate()
+        eval_surprisal.load_model(eval_path)
 
-        print(len(pre[0]), len(pre), index_wa, index_topic)
-        pre[0][index_topic] = swap[0][0]
+        finals = []
+        for (word, prob) in result:
+            swap = self.tokenizer.texts_to_sequences([word])
 
-        print(pre)
-        post = self.tokenizer.sequences_to_texts(pre)
-        print(post)
+            context_window = 2
+            surprise = eval_surprisal.compute_surpisal(sentence=sentence, pun_word=wp,
+                                      pun_alternative=wa, context_window=context_window)
+            print(surprise)
+    
+
+            pre[0][index_topic] = swap[0][0]
+
+            post_simple = self.tokenizer.sequences_to_texts([pre[0]])
+            print(post_simple)
+
+            pre[0][index_topic + 1] = 0
+            if index_topic >= 2:
+            	pre[0][index_topic - 1] = 0
+
+            post_smoothing = self.dac.inference(pre[0])
+            post_smoothing = self.tokenizer.sequences_to_texts(post_smoothing.tolist())
+            finals.append(post_smoothing)
+            print(post_smoothing)
+
+        return finals
 
     def train_predict_model(self, model_params):
         predict_word = WordPredict(max_len=MAX_LEN, max_words=MAX_NUM_WORDS, emb_layer=self.embedding_layer)
@@ -215,7 +244,7 @@ class Pungen:
                                    bs=SMOOTH_BS, split=SMOOTH_SPLIT, pretrain_epochs=4,
                                    epochs=SMOOTH_EPOCHS)
 
-    def run(self, predict_path, smoother_path):
+    def run(self, predict_path, smoother_path, eval_path):
         self._parse_corpus(MIN_SEQ_LEN, TEXT_DATA_DIR + TEXT_DATA)
         self.prepare_emb(EMBEDDING_DIM, MAX_LEN)
 
@@ -246,12 +275,20 @@ class Pungen:
             }
             #smoother_model = self.train_dac_model(model_params)
         else:
-            pass
+            self.dac = DAC()
+            self.dac.load_model(smoother_path)
 
         #GENERATE PUN
-        pungen.form_pun()
+        while True:
+            try:
+                final = pungen.form_pun(eval_path)
+                break
+            except Exception:
+                pass
+
+        print(final)
 
 if __name__ == '__main__':
     pungen = Pungen(filepath='data/bookcorpus/all.txt')
-    #'models/smoother/1589835246 - pretraining Epoch 04.hdf5'
-    pungen.run('models/1589665956 Epoch 20.hdf5', None)
+    #'models/smoother/1589834963 - training Epoch 09.hdf5'
+    pungen.run('models/1589665956 Epoch 20.hdf5', 'models/smoother/1589834963 - training Epoch 09.hdf5', 'models/1589672236 Epoch 16.hdf5')
