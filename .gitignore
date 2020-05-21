@@ -5,3 +5,5 @@ embs/
 logs/
 models/
 *.pyc
+
+glove.6B.300d.txt.word2vec
