@@ -13,13 +13,13 @@ class WordSimilarity:
       https://radimrehurek.com/gensim/models/keyedvectors.html#gensim.models.keyedvectors.WordEmbeddingsKeyedVectors.similar_by_word
     """
     def word2vec(self):
-        glove_input_file = GLOVE_DIR + 'glove.6B.300d.txt'
-        word2vec_output_file = 'glove.6B.300d.txt.word2vec'
+        glove_input_file = GLOVE_DIR + 'glove.6B.50d.txt'
+        word2vec_output_file = 'glove.6B.50d.txt.word2vec'
         glove2word2vec(glove_input_file, word2vec_output_file)
 
     def load(self):
         # load the Stanford GloVe model
-        filename = 'glove.6B.300d.txt.word2vec'
+        filename = 'glove.6B.50d.txt.word2vec'
         self.model = KeyedVectors.load_word2vec_format(filename, binary=False)
 
     def getSimilar(self, pos_words, neg_words, topn):

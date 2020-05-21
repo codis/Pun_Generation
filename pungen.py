@@ -135,38 +135,58 @@ class Pungen:
         text = word_tokenize(sentence)
         tokenized = nltk.pos_tag(text)
 
-        index = -1
-        topic_word = None
-        for (word, pos) in tokenized:
-            index = index + 1
-            if pos == 'NN':
-                topic_word = word
-                print(word, pos)
-                break
-
-        index = -1
-        for (word, pos) in tokenized:
-            index = index + 1
-            if word == pun[1]:
-                print(word, pos)
-                break
-
+        print(tokenized)
         print(sentence, pun[0], pun[1])
         pre = self.tokenizer.texts_to_sequences([sentence])
         wp = self.tokenizer.texts_to_sequences([pun[0]])
         wa = self.tokenizer.texts_to_sequences([pun[1]])
-        print(pre)
-        print(wp, wa)
-        pre[index] = wp
 
+        print(pre, wp, wa)
+        if (not wa[0]) or (not wp[0]):
+            print("The pair of pun and word does not exist in the parsed corpus. Exit...")
+            exit()
+
+        index_wa = -1
+        for seq in pre[0]:
+            index_wa = index_wa + 1
+            if seq == wa[0][0]:
+                pre[0][index_wa] = wp[0][0]
+                break
+
+        wordsimilarity = WordSimilarity()
+        wordsimilarity.word2vec()
+        wordsimilarity.load()
+
+        try_limit = 5
+        try_count = 0
+        while True:
+            try:
+                index_topic = -1
+                topic_word = None
+                for (word, pos) in tokenized:
+                    index_topic = index_topic + 1
+                    if (pos == 'NN') or (pos == 'PRP') or (pos == 'NNP') or (pos == 'NNS') or (pos == 'PRP$'):
+                        topic_word = word
+                        print(word, pos)
+                        break
+
+                result = wordsimilarity.getSimilar([topic_word,  pun[0]], [pun[1]], 5)
+                break
+            except KeyError:
+                print("Word {} is not in vocabulary, try with the next one".format(topic_word))
+                try_count = try_count + 1
+                if try_limit ==  try_count:
+                    print("Limit of trys has been reached. Exit...")
+                    break
+
+        swap = self.tokenizer.texts_to_sequences([result[0][0]])
+
+        print(len(pre[0]), len(pre), index_wa, index_topic)
+        pre[0][index_topic] = swap[0][0]
+
+        print(pre)
         post = self.tokenizer.sequences_to_texts(pre)
         print(post)
-
-        #wordsimilarity = WordSimilarity()
-        #wordsimilarity.word2vec()
-        #wordsimilarity.load()
-        #result = wordsimilarity.getSimilar([pun[0]], 5)
-        #print(result)
 
     def train_predict_model(self, model_params):
         predict_word = WordPredict(max_len=MAX_LEN, max_words=MAX_NUM_WORDS, emb_layer=self.embedding_layer)
