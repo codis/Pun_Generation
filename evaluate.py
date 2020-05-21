@@ -9,7 +9,7 @@ class Evaluate:
         self.model = tf.keras.models.load_model(path)
 
     def compute_surpisal(self, sentence, pun_word, pun_alternative, context_window):
-        pun_index = sentence.index(pun_word)
+        pun_index = sentence.index(pun_alternative)
         seq_pre = pad_sequences([sentence[:pun_index]], maxlen=self.MAX_SEQUENCE_LENGTH)
         seq_post = pad_sequences([sentence[pun_index+1:]], maxlen=self.MAX_SEQUENCE_LENGTH)
         probabilities = self.model.predict([seq_pre, seq_post])[0]
