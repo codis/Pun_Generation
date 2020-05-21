@@ -14,7 +14,7 @@ class Evaluate:
         seq_post = pad_sequences([sentence[pun_index+1:]], maxlen=self.MAX_SEQUENCE_LENGTH)
         probabilities = self.model.predict([seq_pre, seq_post])[0]
         global_prob = probabilities[pun_word]
-        global_prob_alt =  probabilities[pun_alternative]
+        global_prob_alt = probabilities[pun_alternative]
 
 
         seq_pre_local = pad_sequences([sentence[pun_index - context_window:pun_index]], maxlen=self.MAX_SEQUENCE_LENGTH)
